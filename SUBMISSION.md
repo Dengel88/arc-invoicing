@@ -57,7 +57,7 @@ WHAT IT DOES
 - createInvoice(payer, amount, memo) issues an invoice; the caller becomes the creditor. Passing the zero address creates an open invoice that anyone can pay, for when you are emailing a payment link to a counterparty whose wallet you do not know yet.
 - payInvoice(invoiceId) settles it with one payable call. Exact amount only.
 - cancelInvoice(invoiceId) lets the creditor void an invoice that has not been paid.
-- getInvoices(ids[]) reads a whole ledger in one RPC round trip, so the front-end needs no indexer and cannot drift from chain state.
+- The ledger is read straight from contract state through paged getters, so the front-end needs no indexer and cannot drift from chain state.
 
 The front-end is a static React app. It reads invoice lists straight from contract state, connects to Arc's public RPC without an API key, and shows each invoice's status as Pending, Paid or Cancelled in colour, icon and words.
 
@@ -83,15 +83,19 @@ There is also an Arc-specific compliance consideration in the contract. Arc enfo
 
 ENGINEERING
 
-The contract is 5.1 KB, has no dependencies, no proxy, no owner key and no pause function. There is nothing to lose and no upgrade that can change the terms of an invoice after it has been issued.
+The contract is 5.8 KB, has no dependencies, no proxy, no owner key and no pause function. There is nothing to lose and no upgrade that can change the terms of an invoice after it has been issued.
 
-37 Foundry tests pass, covering 100% of lines and functions and 90% of branches. The suite includes a creditor contract that rejects payment (proving the escrow fallback), a creditor that re-enters payInvoice from its receive hook (asserting the call is stopped specifically by the reentrancy guard, not incidentally by a later check), a proof that escrowed funds from one invoice cannot be drained by paying another, and fuzzed settlement over random amounts and payers asserting the contract retains a zero balance afterwards.
+46 Foundry tests and 5 stateful-fuzzing invariants pass, covering 100% of lines and functions and 95.7% of branches. The suite includes a creditor contract that rejects payment (proving the escrow fallback), a creditor that re-enters payInvoice from its receive hook (asserting the call is stopped specifically by the reentrancy guard, not incidentally by a later check), a proof that escrowed funds from one invoice cannot be drained by paying another, and invariants asserting solvency and conservation of value across 16,384 randomly ordered calls.
 
-The deploy script asserts block.chainid is Arc before broadcasting and reads the deployed bytecode back afterwards, so a silent failure cannot pass for success. Deployment cost was measured, not guessed, by simulating against live Arc mainnet: 1,528,053 gas, about 0.061 USDC.
+The tests were themselves tested: ten deliberate bugs were injected one at a time, and all ten were caught. Two were not, on the first pass, and that was the most useful result of the exercise - both were reentrancy-adjacent cases where the contract was safe only because of the guard, with nothing verifying the checks-effects-interactions ordering that is supposed to be the second lock. Tests were added that have the recipient read contract state from inside its own receive hook, pinning that ordering from the outside.
+
+A written self-review is published as SECURITY.md, including a medium-severity finding it turned up that no linter catches: anyone can address an invoice to anyone, and the id is appended to that address's index permanently, so a griefer could spam a victim until their ledger no longer loads. Fixed with paged reads and a batch cap. SECURITY.md also states plainly what was not done - no independent audit, no formal verification - because a self-review that claims to be more than it is would be worse than none.
+
+The deploy script asserts block.chainid is Arc before broadcasting and reads the deployed bytecode back afterwards, so a silent failure cannot pass for success. Deployment cost was measured, not guessed, by simulating against live Arc mainnet: 1,725,656 gas, about 0.075 USDC.
 
 LIMITATIONS, STATED PLAINLY
 
-No partial payments or instalments. The memo is on-chain in the clear and is a reference string, not a place for sensitive detail. No recurring invoices and no multi-currency — Arc's built-in FX engine and EURC would make cross-currency invoicing the natural next step, and it is not implemented here. Not audited: the contract is small, dependency-free and thoroughly tested, but that is not the same as an audit.
+No partial payments or instalments. The memo is on-chain in the clear and is a reference string, not a place for sensitive detail. No recurring invoices and no multi-currency — Arc's built-in FX engine and EURC would make cross-currency invoicing the natural next step, and it is not implemented here. Not audited: the contract is small, dependency-free and thoroughly tested, and SECURITY.md documents a full self-review, but that is not the same as an independent audit. A creditor blocked by Arc's compliance blocklist cannot recover escrowed funds, because there is no admin key by design; that trade-off is documented rather than hidden.
 
 WHERE THIS GOES NEXT
 

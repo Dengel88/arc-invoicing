@@ -1,7 +1,19 @@
 // Generated from contracts/out/ArcInvoicing.sol/ArcInvoicing.json — do not edit by hand.
-// Regenerate with:  npm run sync-abi
 
 export const arcInvoicingAbi = [
+  {
+    "type": "function",
+    "name": "MAX_BATCH",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
   {
     "type": "function",
     "name": "MAX_MEMO_BYTES",
@@ -237,12 +249,108 @@ export const arcInvoicingAbi = [
   },
   {
     "type": "function",
+    "name": "invoicesBilledToCount",
+    "inputs": [
+      {
+        "name": "payer",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "invoicesBilledToPaged",
+    "inputs": [
+      {
+        "name": "payer",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "offset",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "limit",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "invoicesIssuedBy",
     "inputs": [
       {
         "name": "creditor",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "invoicesIssuedByCount",
+    "inputs": [
+      {
+        "name": "creditor",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "invoicesIssuedByPaged",
+    "inputs": [
+      {
+        "name": "creditor",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "offset",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "limit",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -448,6 +556,22 @@ export const arcInvoicingAbi = [
       }
     ],
     "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "BatchTooLarge",
+    "inputs": [
+      {
+        "name": "requested",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxAllowed",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
   },
   {
     "type": "error",

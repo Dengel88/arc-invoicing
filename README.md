@@ -11,7 +11,7 @@ the money is in the creditor's wallet before the page finishes re-rendering.
 
 | | |
 |---|---|
-| **Contract** | `ArcInvoicing.sol` — 5.1 KB, no dependencies, no proxy, no owner |
+| **Contract** | `ArcInvoicing.sol` — 5.8 KB, no dependencies, no proxy, no owner |
 | **Network** | Arc mainnet, chain ID `5042` |
 | **Live app** | _set after deployment_ |
 | **Deployed at** | _set after deployment_ |
@@ -70,8 +70,10 @@ createInvoice(payer, amount, memo) -> invoiceId    issue an invoice; caller is t
 payInvoice(invoiceId) payable                      settle it in one native USDC transfer
 cancelInvoice(invoiceId)                           creditor voids an unpaid invoice
 getInvoice(invoiceId) -> Invoice                   full record and status
-getInvoices(ids[]) -> Invoice[]                    batch read, one RPC round trip
-invoicesIssuedBy(addr) / invoicesBilledTo(addr)    enumerate without an indexer
+getInvoices(ids[]) -> Invoice[]                    batch read, capped at MAX_BATCH (200)
+invoicesIssuedByPaged / invoicesBilledToPaged      paged enumeration; what the UI uses
+invoicesIssuedByCount / invoicesBilledToCount      index sizes, for paging
+invoicesIssuedBy(addr) / invoicesBilledTo(addr)    unbounded; integrators only
 canPay(invoiceId, addr) -> bool                    lets the UI disable a button with a reason
 withdraw()                                         claim a payment that could not be pushed
 ```
@@ -100,9 +102,13 @@ address you do not know yet. The contract records who actually paid.
 **No owner, no proxy, no pause.** There is no admin key, so there is nothing to lose and
 no upgrade that can change the terms of an invoice after it has been issued.
 
-**No indexer.** The front-end reads invoice lists straight from contract state via
-`getInvoices`. Nothing to deploy, nothing to keep in sync, and the UI cannot drift from
-the chain.
+**No indexer.** The front-end reads invoice lists straight from contract state.
+Nothing to deploy, nothing to keep in sync, and the UI cannot drift from the chain.
+
+**Paged reads, for a security reason rather than a performance one.** Anyone can address
+an invoice to anyone, and the id is appended to that address's index forever. Reading an
+index whole would let a griefer spam a victim until their ledger no longer loads, so the
+UI reads only the newest page. See [SECURITY.md](SECURITY.md) finding 1.
 
 ---
 
@@ -112,7 +118,12 @@ the chain.
 forge test
 ```
 
-37 tests, all passing. Coverage: **100% of lines, 100% of functions, 90% of branches.**
+46 unit tests plus 5 stateful-fuzzing invariants, all passing. Coverage: **100% of
+lines, 100% of functions, 95.7% of branches.**
+
+Ten deliberate bugs were injected one at a time to test the tests themselves
+(mutation testing) — **all ten were caught.** Two of them were not, at first, and fixing
+that gap is written up in [SECURITY.md](SECURITY.md).
 
 The suite is not only happy paths. It includes:
 
@@ -126,7 +137,14 @@ The suite is not only happy paths. It includes:
 - a check that bare value transfers to the contract revert, so no funds can arrive
   unaccounted for;
 - fuzzed settlement over random amounts and payers, asserting the contract retains a
-  zero balance afterwards.
+  zero balance afterwards;
+- a griefing test that spams 400 invoices at one address and proves the paged read still
+  works, which is the mitigation for the one real finding of the security review;
+- invariants asserting solvency, conservation of value and that a settled invoice can
+  never return to Pending, checked across 16,384 randomly ordered calls.
+
+A written security review, including what was **not** done and why, is in
+[SECURITY.md](SECURITY.md). It is a self-review, not an audit, and says so.
 
 ---
 
@@ -135,7 +153,8 @@ The suite is not only happy paths. It includes:
 ```
 contracts/
   src/ArcInvoicing.sol        the contract
-  test/ArcInvoicing.t.sol     37 tests incl. reentrancy and escrow attacks
+  test/ArcInvoicing.t.sol     46 tests incl. reentrancy, escrow and griefing attacks
+  test/ArcInvoicing.invariants.t.sol  5 invariants under stateful fuzzing
   script/Deploy.s.sol         deploy script; refuses to run off Arc
 web/
   src/lib/chain.ts            Arc config; public RPC, no API key needed
@@ -143,6 +162,7 @@ web/
   src/lib/invoices.ts         reads invoice state straight from the contract
   src/components/             UI
 MORNING.md                    exact deploy checklist
+SECURITY.md                   self-review: method, findings, and what was not done
 SUBMISSION.md                 DoraHacks submission text
 ```
 
@@ -181,8 +201,8 @@ forge script script/Deploy.s.sol:Deploy \
   --broadcast
 ```
 
-Deployment costs roughly **0.061 USDC** (1,528,053 gas at Arc's 20 gwei floor) — measured
-by simulating against the live chain, not estimated.
+Deployment costs roughly **0.075 USDC** (1,725,656 gas) — measured by simulating against
+the live chain, not estimated.
 
 The script asserts `block.chainid` is Arc before broadcasting, and reads the deployed
 code back afterwards, so a silent failure cannot be mistaken for success.
@@ -196,8 +216,12 @@ code back afterwards, so a silent failure cannot be mistaken for success.
   string, not a place for commercially sensitive detail.
 - **No recurring invoices, no multi-currency.** Arc's built-in FX engine and EURC would
   make cross-currency invoicing a natural next step; it is not implemented here.
+- **A creditor blocked by Arc's compliance blocklist cannot recover escrowed funds.**
+  There is no owner and no rescue function, which is deliberate — see
+  [SECURITY.md](SECURITY.md) finding 2.
 - **Not audited.** This is a proof of concept built for Arc Microgrants. The test suite
-  is thorough and the contract is small and dependency-free, but that is not an audit.
+  is thorough and the contract is small and dependency-free, but that is not an audit,
+  and [SECURITY.md](SECURITY.md) is a self-review, not a substitute for one.
 
 ## Licence
 

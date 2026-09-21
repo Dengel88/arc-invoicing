@@ -64,6 +64,11 @@ contract ArcInvoicing {
     ///         arbitrarily expensive to store or to read back.
     uint256 public constant MAX_MEMO_BYTES = 256;
 
+    /// @notice Cap on `getInvoices` input length.
+    /// @dev    Without it, an oversized batch fails as an opaque RPC timeout somewhere
+    ///         in the node. A revert with a named error tells the caller what to do.
+    uint256 public constant MAX_BATCH = 200;
+
     /// @notice Canonical ERC-20 view of the same USDC balance `msg.value` moves.
     ///         Exposed for front-ends and block explorers; unused by this contract,
     ///         which deliberately settles natively. Reads 6 decimals, not 18.
@@ -128,6 +133,7 @@ contract ArcInvoicing {
     error NotCreditor(uint256 invoiceId, address caller, address creditor);
     error IncorrectPaymentAmount(uint256 expected, uint256 provided);
     error SelfPaymentNotAllowed();
+    error BatchTooLarge(uint256 requested, uint256 maxAllowed);
     error NothingToWithdraw();
     error WithdrawFailed();
     error Reentrancy();
@@ -279,6 +285,27 @@ contract ArcInvoicing {
         return uint64(block.timestamp);
     }
 
+    /// @dev Returns `arr[offset .. offset+limit)`, clamped to the array and to
+    ///      `MAX_BATCH`. An out-of-range offset yields an empty array rather than
+    ///      reverting, so a UI paging past the end degrades quietly.
+    function _page(uint256[] storage arr, uint256 offset, uint256 limit)
+        private
+        view
+        returns (uint256[] memory out)
+    {
+        uint256 total = arr.length;
+        if (offset >= total || limit == 0) return new uint256[](0);
+
+        uint256 remaining = total - offset;
+        uint256 n = limit < remaining ? limit : remaining;
+        if (n > MAX_BATCH) n = MAX_BATCH;
+
+        out = new uint256[](n);
+        for (uint256 i; i < n; ++i) {
+            out[i] = arr[offset + i];
+        }
+    }
+
     /*//////////////////////////////////////////////////////////////
                                VIEW METHODS
     //////////////////////////////////////////////////////////////*/
@@ -298,6 +325,9 @@ contract ArcInvoicing {
         view
         returns (Invoice[] memory out)
     {
+        if (invoiceIds.length > MAX_BATCH) {
+            revert BatchTooLarge(invoiceIds.length, MAX_BATCH);
+        }
         out = new Invoice[](invoiceIds.length);
         for (uint256 i; i < invoiceIds.length; ++i) {
             out[i] = _invoices[invoiceIds[i]];
@@ -305,13 +335,51 @@ contract ArcInvoicing {
     }
 
     /// @notice IDs of invoices issued by `creditor`, oldest first.
+    /// @dev    Unbounded. Safe for a creditor's own list, since only they can add to it.
+    ///         Front-ends should still prefer the paged variant.
     function invoicesIssuedBy(address creditor) external view returns (uint256[] memory) {
         return _issuedBy[creditor];
     }
 
     /// @notice IDs of invoices billed to `payer`, plus open invoices they paid.
+    /// @dev    ⚠ Unbounded, and **anyone can append to it** by issuing an invoice
+    ///         addressed to `payer`. A griefer can therefore make this array large
+    ///         enough that the call no longer fits in an RPC response. Kept for
+    ///         integrators and small accounts; front-ends must use the paged variant
+    ///         below, which is why that one exists.
     function invoicesBilledTo(address payer) external view returns (uint256[] memory) {
         return _billedTo[payer];
+    }
+
+    function invoicesIssuedByCount(address creditor) external view returns (uint256) {
+        return _issuedBy[creditor].length;
+    }
+
+    function invoicesBilledToCount(address payer) external view returns (uint256) {
+        return _billedTo[payer].length;
+    }
+
+    /// @notice A window into `invoicesIssuedBy`, oldest first.
+    /// @param  offset Index to start from. Read the newest page with
+    ///                `offset = count - limit`.
+    /// @param  limit  Maximum ids to return; clamped to what is actually there.
+    function invoicesIssuedByPaged(address creditor, uint256 offset, uint256 limit)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        return _page(_issuedBy[creditor], offset, limit);
+    }
+
+    /// @notice A window into `invoicesBilledTo`, oldest first. Use this rather than the
+    ///         unbounded getter: it is the only one that stays callable if someone spams
+    ///         invoices at the address.
+    function invoicesBilledToPaged(address payer, uint256 offset, uint256 limit)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        return _page(_billedTo[payer], offset, limit);
     }
 
     /// @notice Whether `account` may settle `invoiceId` right now.

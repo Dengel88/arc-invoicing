@@ -56,6 +56,62 @@ contract ReentrantCreditor {
     }
 }
 
+/// @dev A creditor that reads the contract's own state from inside its `receive` hook,
+///      i.e. at the exact moment the external call is made. Used to prove the
+///      checks-effects-interactions ordering holds independently of the reentrancy
+///      guard: an outside observer must never see a half-applied payment.
+contract StateObservingCreditor {
+    ArcInvoicing private immutable INV;
+    uint256 public target;
+    bool public observed;
+    ArcInvoicing.Status public statusDuringCall;
+
+    constructor(ArcInvoicing inv) {
+        INV = inv;
+    }
+
+    function issue(address payer, uint256 amount) external returns (uint256 id) {
+        id = INV.createInvoice(payer, amount, "state probe");
+        target = id;
+    }
+
+    receive() external payable {
+        observed = true;
+        statusDuringCall = INV.getInvoice(target).status;
+    }
+}
+
+/// @dev Refuses the push so its payment is escrowed, then observes its own escrow
+///      balance from inside the `withdraw` payout call.
+contract EscrowObservingCreditor {
+    ArcInvoicing private immutable INV;
+    bool public rejecting = true;
+    bool public observed;
+    uint256 public balanceDuringCall;
+
+    constructor(ArcInvoicing inv) {
+        INV = inv;
+    }
+
+    function issue(address payer, uint256 amount) external returns (uint256) {
+        return INV.createInvoice(payer, amount, "escrow probe");
+    }
+
+    function stopRejecting() external {
+        rejecting = false;
+    }
+
+    function pull() external {
+        INV.withdraw();
+    }
+
+    receive() external payable {
+        if (rejecting) revert("rejecting");
+        observed = true;
+        balanceDuringCall = INV.withdrawable(address(this));
+    }
+}
+
 /// @dev A creditor that accepts payment normally.
 contract AcceptingCreditor {
     function issue(ArcInvoicing inv, address payer, uint256 amount, string calldata memo)
@@ -478,6 +534,48 @@ contract ArcInvoicingTest is Test {
         assertEq(invoicing.withdrawable(address(attacker)), 0);
     }
 
+    /// Defence in depth. The reentrancy guard is the first lock; checks-effects-
+    /// interactions is the second. This asserts the second one independently, by having
+    /// the creditor read the invoice at the instant the payout call reaches it. If the
+    /// status were still Pending there, an attacker who ever found a way past the guard
+    /// would be able to charge the same invoice twice.
+    function test_CEI_InvoiceIsAlreadyPaidWhenTheExternalCallHappens() public {
+        StateObservingCreditor creditor = new StateObservingCreditor(invoicing);
+        uint256 id = creditor.issue(bob, 5 * ONE_USDC);
+
+        vm.prank(bob);
+        invoicing.payInvoice{value: 5 * ONE_USDC}(id);
+
+        assertTrue(creditor.observed(), "the creditor hook must have run");
+        assertEq(
+            uint256(creditor.statusDuringCall()),
+            uint256(ArcInvoicing.Status.Paid),
+            "state must be fully applied before any external call"
+        );
+    }
+
+    /// The same defence-in-depth check for `withdraw`: the escrow balance must already
+    /// be zero by the time the payout call hands control to the recipient.
+    function test_CEI_EscrowIsZeroedBeforeThePayoutCall() public {
+        EscrowObservingCreditor creditor = new EscrowObservingCreditor(invoicing);
+        uint256 id = creditor.issue(bob, 9 * ONE_USDC);
+
+        vm.prank(bob);
+        invoicing.payInvoice{value: 9 * ONE_USDC}(id);
+        assertEq(invoicing.withdrawable(address(creditor)), 9 * ONE_USDC, "should be escrowed");
+
+        creditor.stopRejecting();
+        creditor.pull();
+
+        assertTrue(creditor.observed(), "the payout hook must have run");
+        assertEq(
+            creditor.balanceDuringCall(),
+            0,
+            "escrow must be zeroed before control leaves the contract"
+        );
+        assertEq(address(creditor).balance, 9 * ONE_USDC);
+    }
+
     function test_PlainTransferToContractReverts() public {
         // No `receive` or `fallback`: funds can only enter through `payInvoice`, so
         // a stray transfer cannot become unaccounted-for balance.
@@ -531,6 +629,108 @@ contract ArcInvoicingTest is Test {
         assertEq(out[0].memo, "a");
         assertEq(uint256(out[1].status), uint256(ArcInvoicing.Status.None), "unknown id is zeroed");
         assertEq(out[2].amount, 2 * ONE_USDC);
+    }
+
+    function test_GetInvoices_RevertsAboveTheBatchCap() public {
+        uint256[] memory ids = new uint256[](201);
+        vm.expectRevert(abi.encodeWithSelector(ArcInvoicing.BatchTooLarge.selector, 201, 200));
+        invoicing.getInvoices(ids);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        GRIEFING: UNBOUNDED INDEXES
+    //////////////////////////////////////////////////////////////*/
+
+    /// Anyone can bill anyone, and the id is appended to the payer's index forever.
+    /// A griefer can therefore make the unbounded getter too large to return. The paged
+    /// getter is the mitigation, so it must stay usable at any array size.
+    function test_Griefing_PagedReadSurvivesASpammedIndex() public {
+        uint256 spam = 400;
+        vm.startPrank(carol);
+        for (uint256 i; i < spam; ++i) {
+            invoicing.createInvoice(bob, ONE_USDC, "spam");
+        }
+        vm.stopPrank();
+
+        assertEq(invoicing.invoicesBilledToCount(bob), spam, "index grew unbounded");
+
+        // The newest page is still cheap to read, which is what the UI does.
+        uint256[] memory newest = invoicing.invoicesBilledToPaged(bob, spam - 20, 20);
+        assertEq(newest.length, 20);
+        assertEq(newest[19], spam, "last id must be the newest invoice");
+
+        // And the page is small enough to feed straight into the batch read.
+        ArcInvoicing.Invoice[] memory page = invoicing.getInvoices(newest);
+        assertEq(page.length, 20);
+        assertEq(page[19].payer, bob);
+    }
+
+    function test_CancelInvoice_RevertsOnUnknownInvoice() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(ArcInvoicing.InvoiceNotFound.selector, 4242));
+        invoicing.cancelInvoice(4242);
+    }
+
+    function test_Counts_TrackBothIndexes() public {
+        assertEq(invoicing.invoicesIssuedByCount(alice), 0);
+        assertEq(invoicing.invoicesBilledToCount(bob), 0);
+
+        vm.startPrank(alice);
+        invoicing.createInvoice(bob, ONE_USDC, "a");
+        invoicing.createInvoice(carol, ONE_USDC, "b");
+        vm.stopPrank();
+
+        assertEq(invoicing.invoicesIssuedByCount(alice), 2);
+        assertEq(invoicing.invoicesBilledToCount(bob), 1);
+        assertEq(invoicing.invoicesBilledToCount(carol), 1);
+    }
+
+    function test_Paged_NeverReturnsMoreThanTheBatchCap() public {
+        uint256 n = 205;
+        vm.startPrank(alice);
+        for (uint256 i; i < n; ++i) {
+            invoicing.createInvoice(bob, ONE_USDC, "x");
+        }
+        vm.stopPrank();
+
+        // Asking for more than MAX_BATCH must clamp, not revert: the result of a page
+        // read is fed straight into getInvoices, which enforces the same cap.
+        uint256[] memory page = invoicing.invoicesIssuedByPaged(alice, 0, 1000);
+        assertEq(page.length, invoicing.MAX_BATCH(), "page must clamp to the batch cap");
+        invoicing.getInvoices(page); // must not revert
+    }
+
+    function test_Paged_ClampsToArrayAndCap() public {
+        vm.startPrank(alice);
+        for (uint256 i; i < 5; ++i) {
+            invoicing.createInvoice(bob, ONE_USDC, "x");
+        }
+        vm.stopPrank();
+
+        assertEq(invoicing.invoicesIssuedByPaged(alice, 0, 100).length, 5, "clamps to length");
+        assertEq(invoicing.invoicesIssuedByPaged(alice, 3, 100).length, 2, "clamps from offset");
+        assertEq(invoicing.invoicesIssuedByPaged(alice, 5, 10).length, 0, "offset at end");
+        assertEq(invoicing.invoicesIssuedByPaged(alice, 999, 10).length, 0, "offset past end");
+        assertEq(invoicing.invoicesIssuedByPaged(alice, 0, 0).length, 0, "zero limit");
+        assertEq(invoicing.invoicesBilledToPaged(carol, 0, 10).length, 0, "empty index");
+    }
+
+    function test_Paged_ReturnsTheSameIdsAsTheUnboundedGetter() public {
+        vm.startPrank(alice);
+        uint256 a = invoicing.createInvoice(bob, ONE_USDC, "a");
+        uint256 b = invoicing.createInvoice(bob, ONE_USDC, "b");
+        uint256 c = invoicing.createInvoice(bob, ONE_USDC, "c");
+        vm.stopPrank();
+
+        uint256[] memory full = invoicing.invoicesBilledTo(bob);
+        uint256[] memory paged = invoicing.invoicesBilledToPaged(bob, 0, 3);
+        assertEq(paged.length, full.length);
+        for (uint256 i; i < full.length; ++i) {
+            assertEq(paged[i], full[i], "paged view must agree with the full view");
+        }
+        assertEq(full[0], a);
+        assertEq(full[1], b);
+        assertEq(full[2], c);
     }
 
     function test_CanPay_ReflectsEveryGate() public {

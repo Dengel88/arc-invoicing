@@ -35,29 +35,58 @@ const base = {
 } as const
 
 /**
- * Loads every invoice the connected wallet is party to.
+ * How many of the newest invoices to load from each index.
+ *
+ * Both indexes are paged rather than read whole, and that is a security decision, not a
+ * performance one. Anyone can issue an invoice addressed to any address, and the id is
+ * appended to that address's index permanently. Reading the whole index would therefore
+ * let a griefer spam a victim until the response no longer fits in an RPC reply, and the
+ * victim's ledger would never load again. Two pages of 50 also stay under the
+ * contract's `MAX_BATCH` of 200 when combined.
+ */
+const PAGE_SIZE = 50n
+
+/**
+ * Loads the invoices the connected wallet is party to, newest first.
  *
  * Deliberately read straight from contract state rather than from event logs: no
  * indexer to run, no subgraph to deploy, and the list cannot drift from the chain.
- * Arc's `getInvoices` batch view keeps this to three RPC round trips regardless of
- * how many invoices come back.
  */
 export function useInvoices() {
   const {address} = useAccount()
   const ready = Boolean(contractAddress && address)
+  const poll = {refetchInterval: 12_000}
+
+  const issuedCount = useReadContract({
+    ...base,
+    functionName: 'invoicesIssuedByCount',
+    args: address ? [address] : undefined,
+    query: {enabled: ready, ...poll},
+  })
+
+  const billedCount = useReadContract({
+    ...base,
+    functionName: 'invoicesBilledToCount',
+    args: address ? [address] : undefined,
+    query: {enabled: ready, ...poll},
+  })
+
+  // Start far enough back to capture the newest PAGE_SIZE entries.
+  const offsetFor = (count?: bigint) =>
+    count && count > PAGE_SIZE ? count - PAGE_SIZE : 0n
 
   const issued = useReadContract({
     ...base,
-    functionName: 'invoicesIssuedBy',
-    args: address ? [address] : undefined,
-    query: {enabled: ready, refetchInterval: 12_000},
+    functionName: 'invoicesIssuedByPaged',
+    args: address ? [address, offsetFor(issuedCount.data), PAGE_SIZE] : undefined,
+    query: {enabled: ready && issuedCount.data !== undefined, ...poll},
   })
 
   const billed = useReadContract({
     ...base,
-    functionName: 'invoicesBilledTo',
-    args: address ? [address] : undefined,
-    query: {enabled: ready, refetchInterval: 12_000},
+    functionName: 'invoicesBilledToPaged',
+    args: address ? [address, offsetFor(billedCount.data), PAGE_SIZE] : undefined,
+    query: {enabled: ready && billedCount.data !== undefined, ...poll},
   })
 
   // Open invoices a wallet has paid appear in both lists; de-duplicate, newest first.
@@ -93,6 +122,8 @@ export function useInvoices() {
   }, [details.data, ids])
 
   const refetch = () => {
+    void issuedCount.refetch()
+    void billedCount.refetch()
     void issued.refetch()
     void billed.refetch()
     void details.refetch()
@@ -101,9 +132,20 @@ export function useInvoices() {
   return {
     invoices,
     // Only the first load should blank the screen; background refetches must not.
-    isLoading: ready && (issued.isLoading || billed.isLoading || (ids.length > 0 && details.isLoading)),
-    isError: issued.isError || billed.isError || details.isError,
-    error: issued.error ?? billed.error ?? details.error,
+    isLoading:
+      ready &&
+      (issuedCount.isLoading ||
+        billedCount.isLoading ||
+        issued.isLoading ||
+        billed.isLoading ||
+        (ids.length > 0 && details.isLoading)),
+    isError:
+      issuedCount.isError ||
+      billedCount.isError ||
+      issued.isError ||
+      billed.isError ||
+      details.isError,
+    error: issuedCount.error ?? billedCount.error ?? issued.error ?? billed.error ?? details.error,
     refetch,
   }
 }

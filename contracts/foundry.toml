@@ -20,6 +20,14 @@ cbor_metadata = false
 gas_reports = ["ArcInvoicing"]
 fs_permissions = [{ access = "read", path = "./out" }]
 
+[invariant]
+runs = 256
+depth = 64
+# Many random calls revert legitimately (wrong payer, already paid, nothing owed).
+# The handler filters the obvious ones; the rest must not abort the run.
+fail_on_revert = false
+shrink_run_limit = 5000
+
 [fmt]
 line_length = 100
 tab_width = 4
