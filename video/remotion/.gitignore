@@ -1,0 +1,13 @@
+node_modules
+out
+.remotion
+*.log
+
+# Public assets are large binary media — deliberately not versioned. See
+# video/CAPTURE.md and video/SCRIPT.md for how to produce them.
+public/captures/*
+public/clips/*
+public/audio/*
+!public/captures/.gitkeep
+!public/clips/.gitkeep
+!public/audio/.gitkeep
