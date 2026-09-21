@@ -3,9 +3,8 @@
 Copy each block into the matching field on
 <https://dorahacks.io/hackathon/arc-microgrants>.
 
-Fill the three `<< >>` placeholders first — they only exist after deployment:
+Fill the two remaining `<< >>` placeholders first — they only exist after deployment:
 
-- `<<CONTRACT_ADDRESS>>` — printed by the deploy script
 - `<<LIVE_URL>>` — the Vercel URL
 - `<<REPO_URL>>` — the GitHub repository URL
 
@@ -38,7 +37,7 @@ Cross-border invoices issued on-chain and settled with a single native USDC tran
 ## Contract address (Arc mainnet, chain 5042)
 
 ```
-<<CONTRACT_ADDRESS>>
+0x4AC461f079E9dd4f49f4d8254e4e0cA79b2102BA
 ```
 
 ---
