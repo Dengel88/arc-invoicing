@@ -3,9 +3,7 @@
 Copy each block into the matching field on
 <https://dorahacks.io/hackathon/arc-microgrants>.
 
-Fill the one remaining `<< >>` placeholder first:
-
-- `<<REPO_URL>>` — the GitHub repository URL
+Every field below is filled in and ready to copy.
 
 ---
 
@@ -30,7 +28,7 @@ https://arc-invoicing-iota.vercel.app
 ## Repository
 
 ```
-<<REPO_URL>>
+https://github.com/Dengel88/arc-invoicing
 ```
 
 ## Contract address (Arc mainnet, chain 5042)
@@ -120,5 +118,5 @@ USDC, payments, invoicing, cross-border, stablecoin, fintech, solidity, foundry
 ## Builder profile
 
 ```
-<<your GitHub profile URL>>
+https://github.com/Dengel88
 ```

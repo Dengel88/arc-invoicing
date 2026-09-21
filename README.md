@@ -170,8 +170,18 @@ SUBMISSION.md                 DoraHacks submission text
 
 ## Running it locally
 
+`forge-std` is a git submodule, so clone with `--recursive` or the tests will not
+compile:
+
 ```bash
-# contracts
+git clone --recursive https://github.com/Dengel88/arc-invoicing.git
+cd arc-invoicing
+```
+
+Already cloned without it? `git submodule update --init --recursive` fixes it.
+
+```bash
+# contracts — 46 unit tests plus the invariant suite
 cd contracts && forge test
 
 # front-end
