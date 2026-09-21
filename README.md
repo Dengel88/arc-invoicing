@@ -13,7 +13,7 @@ the money is in the creditor's wallet before the page finishes re-rendering.
 |---|---|
 | **Contract** | `ArcInvoicing.sol` — 5.8 KB, no dependencies, no proxy, no owner |
 | **Network** | Arc mainnet, chain ID `5042` |
-| **Live app** | _set after deployment_ |
+| **Live app** | [https://arc-invoicing-iota.vercel.app](https://arc-invoicing-iota.vercel.app) |
 | **Deployed at** | [`0x4AC461f079E9dd4f49f4d8254e4e0cA79b2102BA`](https://explorer.arc.io/address/0x4AC461f079E9dd4f49f4d8254e4e0cA79b2102BA) |
 
 ---

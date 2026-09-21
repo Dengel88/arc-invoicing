@@ -3,9 +3,8 @@
 Copy each block into the matching field on
 <https://dorahacks.io/hackathon/arc-microgrants>.
 
-Fill the two remaining `<< >>` placeholders first — they only exist after deployment:
+Fill the one remaining `<< >>` placeholder first:
 
-- `<<LIVE_URL>>` — the Vercel URL
 - `<<REPO_URL>>` — the GitHub repository URL
 
 ---
@@ -25,7 +24,7 @@ Cross-border invoices issued on-chain and settled with a single native USDC tran
 ## Live deployment
 
 ```
-<<LIVE_URL>>
+https://arc-invoicing-iota.vercel.app
 ```
 
 ## Repository
