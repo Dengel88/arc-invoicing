@@ -150,6 +150,70 @@ export function useInvoices() {
   }
 }
 
+/**
+ * The most recent invoices on the contract, readable by anyone with no wallet
+ * connected.
+ *
+ * This exists for a specific reason: without it, someone opening the deployed link
+ * — a reviewer, a prospective user — sees a polished page and an empty ledger, and
+ * has no way to tell whether anything actually works without connecting a wallet
+ * first. Reading the tail of the ledger is public information anyway; the contract
+ * is a public ledger.
+ *
+ * Ids are dense from 1 (an invariant the test suite asserts), so the newest `limit`
+ * entries are just a descending count from `totalInvoices` — no enumeration needed.
+ */
+export function usePublicInvoices(limit = 6) {
+  const total = useReadContract({
+    ...base,
+    functionName: 'totalInvoices',
+    query: {enabled: Boolean(contractAddress), refetchInterval: 15_000},
+  })
+
+  const ids = useMemo(() => {
+    const n = total.data ?? 0n
+    if (n === 0n) return []
+    const out: bigint[] = []
+    for (let id = n; id > 0n && out.length < limit; id--) out.push(id)
+    return out
+  }, [total.data, limit])
+
+  const details = useReadContract({
+    ...base,
+    functionName: 'getInvoices',
+    args: [ids],
+    query: {enabled: ids.length > 0, refetchInterval: 15_000},
+  })
+
+  const invoices: Invoice[] = useMemo(() => {
+    if (!details.data) return []
+    return details.data
+      .map((row, i) => ({
+        id: ids[i],
+        creditor: row.creditor,
+        status: row.status as Status,
+        createdAt: row.createdAt,
+        payer: row.payer,
+        paidAt: row.paidAt,
+        paidBy: row.paidBy,
+        amount: row.amount,
+        memo: row.memo,
+      }))
+      .filter((inv) => inv.status !== Status.None)
+  }, [details.data, ids])
+
+  return {
+    invoices,
+    total: total.data ?? 0n,
+    isLoading: total.isLoading || (ids.length > 0 && details.isLoading),
+    isError: total.isError || details.isError,
+    refetch: () => {
+      void total.refetch()
+      void details.refetch()
+    },
+  }
+}
+
 export type Totals = {
   owedToYou: bigint
   youOwe: bigint

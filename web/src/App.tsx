@@ -4,11 +4,12 @@ import {useAccount} from 'wagmi'
 import {ConnectBar} from './components/ConnectBar'
 import {CreateInvoiceForm} from './components/CreateInvoiceForm'
 import {InvoiceList} from './components/InvoiceList'
+import {PublicActivity} from './components/PublicActivity'
 import {Stats} from './components/Stats'
 import {ToastStack, type ToastState} from './components/Toast'
 import {activeChain, contractAddress, explorerAddress} from './lib/chain'
 import {shortAddress} from './lib/format'
-import {useInvoices, useTotals} from './lib/invoices'
+import {useInvoices, usePublicInvoices, useTotals} from './lib/invoices'
 
 const PILLARS = [
   {
@@ -32,6 +33,7 @@ export default function App() {
   const {address} = useAccount()
   const {invoices, isLoading, isError, refetch} = useInvoices()
   const totals = useTotals(invoices, address)
+  const publicFeed = usePublicInvoices()
 
   const [toasts, setToasts] = useState<ToastState[]>([])
   const nextId = useRef(1)
@@ -146,16 +148,31 @@ export default function App() {
             />
           </div>
 
-          <InvoiceList
-            invoices={invoices}
-            self={address}
-            isLoading={isLoading}
-            isError={isError}
-            onRetry={refetch}
-            onPending={onPending}
-            onSuccess={onSuccess}
-            onError={onError}
-          />
+          {/*
+            With a wallet connected this is the visitor's own ledger. Without one it
+            falls back to the public tail of the contract, so anyone opening the link
+            can see the thing working rather than an empty box.
+          */}
+          {address ? (
+            <InvoiceList
+              invoices={invoices}
+              self={address}
+              isLoading={isLoading}
+              isError={isError}
+              onRetry={refetch}
+              onPending={onPending}
+              onSuccess={onSuccess}
+              onError={onError}
+            />
+          ) : (
+            <PublicActivity
+              invoices={publicFeed.invoices}
+              total={publicFeed.total}
+              isLoading={publicFeed.isLoading}
+              isError={publicFeed.isError}
+              onRetry={publicFeed.refetch}
+            />
+          )}
         </div>
 
         <footer className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 text-sm text-faint">
