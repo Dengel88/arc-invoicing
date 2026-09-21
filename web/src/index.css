@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+/*
+  Swiss-minimal dark theme. One accent (amber) carries "act here"; status colours are
+  reserved for invoice state, so the two never compete for meaning.
+
+  Dark-only by design. `color-scheme` is declared so the browser renders native form
+  controls, scrollbars and autofill to match, instead of dropping a white date picker
+  onto a near-black page.
+*/
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  --color-canvas: #0a0e17;
+  --color-surface: #111725;
+  --color-raised: #161d2e;
+  --color-line: #232c40;
+  --color-line-strong: #33405c;
+
+  --color-ink: #f6f8fc;
+  --color-muted: #9aa6bd;
+  --color-faint: #717e96;
+
+  --color-brand: #f59e0b;
+  --color-brand-hi: #fbbf24;
+  --color-on-brand: #1a1204;
+
+  --color-paid: #34d399;
+  --color-paid-bg: #052e26;
+  --color-pending: #fbbf24;
+  --color-pending-bg: #3a2006;
+  --color-void: #94a3b8;
+  --color-void-bg: #1a2233;
+  --color-danger: #fca5a5;
+  --color-danger-bg: #3f1010;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--color-canvas);
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Money and hashes must not jitter as digits change. */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* One visible focus treatment everywhere, so keyboard users are never guessing. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* A quiet grid behind the header — depth without a decorative gradient. */
+.grid-veil {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 0%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 0%, #000 35%, transparent 100%);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(251 191 36 / 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgb(251 191 36 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(251 191 36 / 0);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-rise {
+  animation: rise 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-slide-in {
+  animation: slide-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.2s ease-out infinite;
+}
+
+.animate-sweep {
+  animation: sweep 1.4s ease-in-out infinite;
+}
+
+/*
+  Motion is never the only carrier of meaning here: every animated state also has a
+  static icon and label, so switching all of it off loses no information.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

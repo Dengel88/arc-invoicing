@@ -1,0 +1,26 @@
+# Secrets. Never commit a key, a keystore or an RPC URL with credentials in it.
+.env
+.env.*
+!.env.example
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+!contracts/broadcast/**/run-latest.json
+
+# Node
+node_modules/
+web/dist/
+*.log
+npm-debug.log*
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Tooling scratch
+.playwright-mcp/
+.vercel
