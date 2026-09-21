@@ -11,15 +11,18 @@
 ## Шаг 0. Подготовка терминала (30 секунд)
 
 Foundry я поставил в `C:\Users\Sam\.foundry\bin`, но в системный PATH не добавлял —
-не хотел менять твоё окружение без спроса. В каждой новой сессии терминала выполни:
+не хотел менять твоё окружение без спроса.
 
-```bash
-export PATH="$HOME/.foundry/bin:$PATH"
+Твой терминал — **PowerShell**, все команды ниже написаны под него. Выполняй их в одном
+и том же окне: откроешь новое — PATH придётся задать заново.
+
+```powershell
+$env:PATH = "$env:USERPROFILE\.foundry\bin;$env:PATH"
 ```
 
 Проверка, что сработало (должно напечатать `forge Version: 1.8.3`):
 
-```bash
+```powershell
 forge --version
 ```
 
@@ -66,7 +69,7 @@ forge --version
 
 **Как убедиться, что деньги дошли** (подставь свой адрес):
 
-```bash
+```powershell
 cast balance 0xТВОЙ_АДРЕС --rpc-url https://rpc.mainnet.arc.io --ether
 ```
 
@@ -80,8 +83,8 @@ cast balance 0xТВОЙ_АДРЕС --rpc-url https://rpc.mainnet.arc.io --ether
 
 Пока идут деньги, посмотри код своими глазами.
 
-```bash
-cd /d/AI/Kwork/ARcHakaton/contracts
+```powershell
+cd D:\AI\Kwork\ARcHakaton\contracts
 forge test -vv
 ```
 
@@ -90,7 +93,7 @@ forge test -vv
 
 Хочешь посмотреть покрытие:
 
-```bash
+```powershell
 forge coverage --no-match-coverage "test|script"
 ```
 
@@ -108,17 +111,17 @@ forge coverage --no-match-coverage "test|script"
 Приватный ключ нигде в проекте не лежит и лежать не должен. Foundry умеет держать его
 в зашифрованном keystore и спрашивать пароль при подписи.
 
-```bash
+```powershell
 cast wallet import arc-deployer --interactive
 ```
 
 Команда спросит приватный ключ кошелька A (ввод не отображается — это нормально),
-потом пароль для шифрования. Ключ ляжет в `~/.foundry/keystores/arc-deployer`
+потом пароль для шифрования. Ключ ляжет в `C:\Users\Sam\.foundry\keystores\arc-deployer`
 в зашифрованном виде, а в историю терминала не попадёт.
 
 Проверить, что импортировался нужный адрес:
 
-```bash
+```powershell
 cast wallet address --account arc-deployer
 ```
 
@@ -131,8 +134,8 @@ cast wallet address --account arc-deployer
 **Сначала — репетиция без отправки.** Эта команда прогоняет весь деплой против живой
 сети, но ничего не публикует (нет флага `--broadcast`):
 
-```bash
-cd /d/AI/Kwork/ARcHakaton/contracts
+```powershell
+cd D:\AI\Kwork\ARcHakaton\contracts
 forge script script/Deploy.s.sol:Deploy --rpc-url https://rpc.mainnet.arc.io
 ```
 
@@ -140,11 +143,8 @@ forge script script/Deploy.s.sol:Deploy --rpc-url https://rpc.mainnet.arc.io
 
 **Теперь боевой деплой:**
 
-```bash
-forge script script/Deploy.s.sol:Deploy \
-  --rpc-url https://rpc.mainnet.arc.io \
-  --account arc-deployer \
-  --broadcast
+```powershell
+forge script script/Deploy.s.sol:Deploy --rpc-url https://rpc.mainnet.arc.io --account arc-deployer --broadcast
 ```
 
 Что происходит: `--account arc-deployer` берёт ключ из keystore (спросит пароль),
@@ -166,9 +166,9 @@ forge script script/Deploy.s.sol:Deploy \
 
 ## Шаг 5. Подключить адрес к фронту и задеплоить на Vercel 🔑
 
-```bash
-cd /d/AI/Kwork/ARcHakaton/web
-cp .env.example .env
+```powershell
+cd D:\AI\Kwork\ARcHakaton\web
+Copy-Item .env.example .env
 ```
 
 Открой `web/.env` и впиши адрес из шага 4:
@@ -179,7 +179,7 @@ VITE_CONTRACT_ADDRESS=0xАДРЕС_ИЗ_ШАГА_4
 
 Проверь локально, что фронт увидел контракт:
 
-```bash
+```powershell
 npm run dev
 ```
 
@@ -189,20 +189,20 @@ npm run dev
 
 Теперь Vercel. CLI не установлен, ставим:
 
-```bash
+```powershell
 npm install -g vercel
 ```
 
 Логин (откроется браузер, войдёшь своим аккаунтом — я к нему доступа не имею):
 
-```bash
+```powershell
 vercel login
 ```
 
 Деплой в прод **из папки `web`**, это важно:
 
-```bash
-cd /d/AI/Kwork/ARcHakaton/web
+```powershell
+cd D:\AI\Kwork\ARcHakaton\web
 vercel --prod
 ```
 
@@ -217,13 +217,13 @@ Vercel спросит несколько вещей:
 ⚠️ **Важно:** переменную окружения надо задать и на стороне Vercel, иначе на проде
 плашка вернётся — локальный `.env` туда не уезжает:
 
-```bash
+```powershell
 vercel env add VITE_CONTRACT_ADDRESS production
 ```
 
 Вставь адрес контракта, потом пересобери:
 
-```bash
+```powershell
 vercel --prod
 ```
 
@@ -262,8 +262,8 @@ vercel --prod
 Репозиторий уже инициализирован, и коммит я сделал — остаётся только отправить.
 Посмотреть, что именно закоммичено:
 
-```bash
-cd /d/AI/Kwork/ARcHakaton
+```powershell
+cd D:\AI\Kwork\ARcHakaton
 git log --stat -1
 ```
 
@@ -275,7 +275,7 @@ git log --stat -1
 
 Затем (подставь своё имя пользователя и название репозитория):
 
-```bash
+```powershell
 git remote add origin https://github.com/ТВОЙ_ЮЗЕР/arc-invoicing.git
 git branch -M main
 git push -u origin main
@@ -318,7 +318,7 @@ Personal access tokens → Tokens (classic) → Generate new token, галочк
 
 | Симптом | Что это значит |
 |---|---|
-| `forge: command not found` | Не выполнил шаг 0 (`export PATH=...`) |
+| `forge: command not found` | Не выполнил шаг 0, или открыл новое окно терминала |
 | `insufficient funds for gas` | На кошельке нет USDC — шаг 1 |
 | `Deploy: refusing to deploy outside Arc` | Неверный `--rpc-url` |
 | На сайте жёлтая плашка после деплоя | `VITE_CONTRACT_ADDRESS` не задан в Vercel — шаг 5 |
