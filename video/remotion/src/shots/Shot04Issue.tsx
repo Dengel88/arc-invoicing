@@ -4,6 +4,9 @@ import {color} from '../theme'
 import {MediaOrPlaceholder} from '../components/MediaOrPlaceholder'
 import {Caption} from '../components/Caption'
 
+/** Seconds into the demo take where issuing begins. Adjust once the real file exists. */
+const TRIM_ISSUE_SECONDS = 0
+
 export function Shot04Issue() {
   return (
     <AbsoluteFill style={{backgroundColor: color.canvas}}>
@@ -17,7 +20,11 @@ export function Shot04Issue() {
             boxShadow: '0 40px 100px rgba(0,0,0,0.55)',
           }}
         >
-          <MediaOrPlaceholder assetKey="issue-invoice" />
+          <MediaOrPlaceholder
+            assetKey="demo-take"
+            trimFrom={TRIM_ISSUE_SECONDS}
+            placeholderNote="Screen recording: issuing the invoice"
+          />
         </div>
       </AbsoluteFill>
 

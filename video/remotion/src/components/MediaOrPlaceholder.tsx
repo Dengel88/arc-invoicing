@@ -4,39 +4,48 @@ import {color} from '../theme'
 import {sansFont, monoFont} from '../fonts'
 
 /**
- * Central registry of every external asset the trailer references — screen
- * recordings and (optionally) Higgsfield-generated clips. Exactly one boolean flips
- * per asset once the real file lands in `public/`; nothing else in the project
- * changes.
+ * The trailer's external media, in one place. Exactly one boolean flips once the real
+ * file lands in `public/`; nothing else in the project changes.
  *
- * This exists so `npm run start` / `npm run render` work today, before a single
- * recording or generated clip exists — every shot falls back to a clearly labelled
- * placeholder instead of Remotion throwing a 404 on a missing file.
+ * This exists so `npm run start` / `npm run render` work before any recording exists —
+ * every shot falls back to a clearly labelled placeholder instead of Remotion throwing
+ * a 404 on a missing file.
+ *
+ * Shots 04 and 05 deliberately share ONE source file. The demo is recorded as a single
+ * continuous take — issue the invoice, switch wallets, pay it — because the wallet
+ * switch is part of what makes it believable, and a cut there would look like
+ * something was hidden. The two shots just window into different parts of that take
+ * via `trimFrom`.
  */
 export const ASSETS = {
-  'issue-invoice': {
+  'demo-take': {
     ready: false,
-    path: 'captures/issue-invoice.mp4',
-    label: 'Screen recording: issue invoice',
-    howTo: 'See video/CAPTURE.md — record shot 04.',
-  },
-  'pay-invoice': {
-    ready: false,
-    path: 'captures/pay-invoice.mp4',
-    label: 'Screen recording: pay invoice',
-    howTo: 'See video/CAPTURE.md — record shot 05.',
+    path: 'captures/demo-take.mp4',
+    label: 'Screen recording: the demo take',
+    howTo: 'See video/CAPTURE.md — one continuous take.',
   },
 } as const
 
 export type AssetKey = keyof typeof ASSETS
 
-export function MediaOrPlaceholder({assetKey}: {assetKey: AssetKey}) {
+export function MediaOrPlaceholder({
+  assetKey,
+  /** Seconds into the source file where this shot should start. */
+  trimFrom = 0,
+  /** Shown on the placeholder so it is obvious which beat is missing. */
+  placeholderNote,
+}: {
+  assetKey: AssetKey
+  trimFrom?: number
+  placeholderNote?: string
+}) {
   const asset = ASSETS[assetKey]
 
   if (asset.ready) {
     return (
       <OffthreadVideo
         src={staticFile(asset.path)}
+        trimBefore={Math.round(trimFrom * 30)}
         style={{width: '100%', height: '100%', objectFit: 'cover'}}
       />
     )
@@ -65,7 +74,7 @@ export function MediaOrPlaceholder({assetKey}: {assetKey: AssetKey}) {
           textAlign: 'center',
         }}
       >
-        {asset.label}
+        {placeholderNote ?? asset.label}
       </div>
       <div
         style={{

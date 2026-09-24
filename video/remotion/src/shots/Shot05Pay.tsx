@@ -4,6 +4,12 @@ import {color} from '../theme'
 import {MediaOrPlaceholder} from '../components/MediaOrPlaceholder'
 import {Caption} from '../components/Caption'
 
+/**
+ * Seconds into the demo take where the payment beat begins — i.e. just before
+ * switching wallets. Set this to the real timestamp once the take is recorded.
+ */
+const TRIM_PAY_SECONDS = 12
+
 export function Shot05Pay() {
   return (
     <AbsoluteFill style={{backgroundColor: color.canvas}}>
@@ -17,7 +23,11 @@ export function Shot05Pay() {
             boxShadow: '0 40px 100px rgba(0,0,0,0.55)',
           }}
         >
-          <MediaOrPlaceholder assetKey="pay-invoice" />
+          <MediaOrPlaceholder
+            assetKey="demo-take"
+            trimFrom={TRIM_PAY_SECONDS}
+            placeholderNote="Screen recording: paying the invoice"
+          />
         </div>
       </AbsoluteFill>
 

@@ -6,6 +6,11 @@ A freelancer in Lisbon bills a client in Singapore. Today that invoice takes two
 days, passes through correspondent banks, loses 3–6% to FX spread and wire fees, and
 neither side can see where the money is while it is in flight.
 
+The same shape holds for an agency billing a retainer, a SaaS company invoicing a
+business customer, or a small exporter waiting on a wire — anyone who sends an invoice
+across a border and then waits, without being large enough to negotiate better terms
+from a bank.
+
 On Arc it is one transaction. The creditor issues the invoice, the payer settles it, and
 the money is in the creditor's wallet before the page finishes re-rendering.
 
@@ -15,6 +20,13 @@ the money is in the creditor's wallet before the page finishes re-rendering.
 | **Network** | Arc mainnet, chain ID `5042` |
 | **Live app** | [https://arc-invoicing-iota.vercel.app](https://arc-invoicing-iota.vercel.app) |
 | **Deployed at** | [`0x4AC461f079E9dd4f49f4d8254e4e0cA79b2102BA`](https://explorer.arc.io/address/0x4AC461f079E9dd4f49f4d8254e4e0cA79b2102BA) |
+
+<!--
+  DEMO GIF GOES HERE — see video/CAPTURE.md.
+  Replace this comment with:  ![Issuing and paying an invoice on Arc](docs/demo.gif)
+  Above the fold on purpose: a reviewer sees the thing working before deciding
+  whether to read further.
+-->
 
 ---
 
@@ -229,6 +241,14 @@ code back afterwards, so a silent failure cannot be mistaken for success.
 - **A creditor blocked by Arc's compliance blocklist cannot recover escrowed funds.**
   There is no owner and no rescue function, which is deliberate — see
   [SECURITY.md](SECURITY.md) finding 2.
+- **Reading state directly does not scale to rich queries.** The front-end reads the
+  ledger straight from contract state, which is why it needs no indexer and cannot drift
+  from the chain. Paging keeps that correct and cheap at any invoice count — but paging
+  is not search. "All unpaid invoices over 90 days old, by client" is not a question
+  contract storage can answer, and at that point the right move is an off-chain index
+  built from the contract's events, used for querying while settlement and truth stay
+  on-chain. That is an addition, not a rewrite: every event needed to build one is
+  already emitted.
 - **Not audited.** This is a proof of concept built for Arc Microgrants. The test suite
   is thorough and the contract is small and dependency-free, but that is not an audit,
   and [SECURITY.md](SECURITY.md) is a self-review, not a substitute for one.

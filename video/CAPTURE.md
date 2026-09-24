@@ -1,61 +1,73 @@
-# Recording shots 04–05 (the real screen capture)
+# Recording the demo (one continuous take)
 
-These two shots are **not** generated — a real signature in a real wallet, paying a
-real invoice on Arc mainnet, is more convincing than any AI render of a UI, and it's
-the one part of the trailer that has to be exactly correct. Everything else (shots 01,
-02, 03, 06, 08) is already built in pure Remotion/SVG and needs no recording at all.
+This is the one part that cannot be generated or delegated: a real signature in a real
+wallet, paying a real invoice on Arc mainnet. Everything else in the trailer (shots 01,
+02, 03, 06, 08) is already built in Remotion and needs no recording.
+
+**Record it as a single unbroken take.** Issue the invoice, switch wallets, pay it — no
+stopping, no re-takes stitched together. The wallet switch is part of what makes it
+believable, and a cut at exactly that moment would look like something was hidden. The
+Remotion project windows into different parts of the same file for shots 04 and 05, so
+one file is all that's needed.
 
 ## Before you start
 
-- Two wallets ready in Rabby: **A** (issues the invoice) and **B** (pays it), both
-  holding a little USDC on Arc. Reuse the same two wallets from the mainnet demo — the
-  balances don't need to be large, the deploy/demo already proved the flow works.
-- The live app open: `https://arc-invoicing-iota.vercel.app`
-- Browser window resized to a clean **1440×900** (matches the shot's crop). On Windows,
-  snap the window or use a browser dev-tools device-size override.
-- Screen recorder at **60fps** if your tool supports it — the freeze-frame in shot 05
-  needs the extra frames to land cleanly on the exact moment the badge turns green.
-- **Do one full dry run without recording first.** The two-wallet switch in shot 05 is
-  the one part worth rehearsing — get the Rabby account-switcher muscle memory down
-  before the take that matters.
+- **Do step 6а of MORNING.md first** — seed the ledger with the four states. On the
+  recording, the right-hand column will then show a working product with history
+  instead of an almost-empty demo.
+- Two wallets in Rabby: **A** (issues) and **B** (pays), both funded on Arc.
+- Live app open: `https://arc-invoicing-iota.vercel.app`, **Wallet A connected**.
+- Browser window at **1440×900**.
+- Screen recorder at **60fps** if possible — the freeze-frame in shot 05 lands cleaner
+  with the extra frames.
+- **One full dry run without recording.** The wallet switch is the only fiddly part;
+  get the Rabby account-switcher muscle memory down before the take that counts.
 
-## Shot 04 — Issue (target: ~12s of usable footage, trimmed to 10s)
+## The take (~30 seconds of usable footage)
 
-1. Start on the app with **Wallet A** already connected.
-2. Click into the **Bill to** field, paste Wallet B's address.
-3. Click **Amount**, type `0.5` — type it naturally, don't paste, the keystrokes read
-   as more authentic.
-4. Click **Reference**, type `INV-2026-014 · Q3 design retainer`.
-5. Pause ~1s so the filled form is readable, then click **Issue invoice**.
-6. Let the Rabby confirmation popup appear and stay on screen ~1.5s before clicking
-   confirm — don't rush through it, the trailer wants the viewer to register "this is
-   a real wallet."
-7. Hold ~1s on the ledger with the new **Pending** card visible.
+Values, chosen so they don't collide with the invoices seeded in step 6а:
 
-## Shot 05 — Pay (target: ~14s of usable footage, trimmed to 11s)
+| Field | Value |
+|---|---|
+| Bill to | Wallet B's address |
+| Amount | `0.5` |
+| Reference | `INV-2026-005 · Q4 brand system, milestone 1` |
 
-1. Continue from shot 04, or start fresh with Wallet A connected and the Pending
-   invoice already visible.
-2. Open Rabby, switch the active account to **Wallet B** — keep this visible, it's a
-   good authentic beat, don't cut around it.
-3. Let the page notice the account change and show the **Pay 0.50** button.
-4. Click **Pay**, let the Rabby confirmation sit on screen ~1.5s, confirm.
-5. **This is the shot's one essential frame:** hold on the card for a full 2 seconds
-   after the badge flips from Pending (amber) to Paid (green). Don't cut away early —
-   Shot05Pay.tsx freezes a caption ("1 signature. No approve().") right on this beat,
-   so the source footage needs real breathing room here, not a quick flash.
+1. Start on the app, Wallet A connected, ledger visible on the right.
+2. Click **Bill to**, paste Wallet B's address.
+3. Click **Amount**, **type** `0.5` — type it, don't paste; the keystrokes read as real.
+4. Click **Reference**, type the line above.
+5. Pause ~1s on the filled form, then click **Issue invoice**.
+6. Let the Rabby popup sit on screen ~1.5s before confirming — don't rush it, the
+   viewer needs to register that this is a real wallet.
+7. Hold ~1s on the new **Pending** card.
+8. Open Rabby and switch the active account to **Wallet B**. Keep this in frame.
+9. Let the page notice the change and show the **Pay 0.50** button.
+10. Click **Pay**. Let the Rabby confirmation sit ~2s — **this is the shot**: one
+    signature, no `approve` before it. Confirm.
+11. **Hold for a full 2 seconds** after the badge flips Pending → Paid. Do not cut
+    early; a caption lands right on this beat and needs room.
+12. Stop recording.
 
 ## After recording
 
-1. Trim each clip to roughly the target length above — a few seconds of slack is fine,
-   `MediaOrPlaceholder` in the Remotion project will crop/cover to fill the frame.
-2. Export as MP4, H.264, no audio track needed (the trailer's own audio track, if any,
-   plays underneath).
-3. Save as:
-   - `video/remotion/public/captures/issue-invoice.mp4`
-   - `video/remotion/public/captures/pay-invoice.mp4`
-4. In `video/remotion/src/components/MediaOrPlaceholder.tsx`, flip `ready: false` to
-   `ready: true` for each asset in the `ASSETS` map. That's the only code change
-   needed — the placeholder disappears and the real footage takes its place.
-5. Re-render a still at that shot's frame to confirm it looks right before doing a
-   full render (see `video/remotion/README.md` for the exact commands).
+1. Trim only the dead air at the very start and end. Leave the middle intact.
+2. Export MP4, H.264, no audio track needed.
+3. Save as `video/remotion/public/captures/demo-take.mp4`
+4. Note the timestamp (in seconds) where **step 8 begins** — the wallet switch.
+5. Two edits in the Remotion project:
+   - `src/components/MediaOrPlaceholder.tsx` → `ready: false` becomes `ready: true`
+   - `src/shots/Shot05Pay.tsx` → set `TRIM_PAY_SECONDS` to that timestamp
+6. Check a still before a full render:
+
+```powershell
+cd D:\AI\Kwork\ARcHakaton\video\remotion
+npx remotion still src/index.ts ArcInvoicingTrailer out/check.png --frame=900
+```
+
+## The README GIF comes from this same take
+
+No second recording. The GIF is a ~15–20s window of this file — roughly step 5 through
+step 11, the part where the invoice is issued and then paid — scaled down, no audio,
+looping. It goes at the top of the README, above the fold. Hand over the file and that
+gets cut from it.
