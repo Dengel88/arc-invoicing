@@ -18,8 +18,20 @@ one file is all that's needed.
 - Two wallets in Rabby: **A** (issues) and **B** (pays), both funded on Arc.
 - Live app open: `https://arc-invoicing-iota.vercel.app`, **Wallet A connected**.
 - Browser window at **1440×900**.
-- Screen recorder at **60fps** if possible — the freeze-frame in shot 05 lands cleaner
-  with the extra frames.
+- **Windows Snipping Tool (Ножницы) is the right recorder here** — and not just because
+  it is already installed. It captures a screen *region*, so the Rabby confirmation
+  popup gets recorded no matter which window it belongs to. Xbox Game Bar records a
+  single window, and the extension popup is a separate one, so it can silently miss the
+  most important frames of the whole demo. OBS is better still if you already have it,
+  but it is not worth installing for this.
+- **30fps is fine.** An earlier version of this file asked for 60 — that was
+  over-specified: the trailer itself renders at 30fps, so extra source frames are
+  discarded anyway.
+- **Pre-fill the long fields before hitting Record.** Paste Wallet B's address into
+  **Bill to** and type the **Reference** in advance. Nobody needs to watch a 40-character
+  hex address being pasted, and the footage gets trimmed anyway. Leave the **Amount**
+  empty and type it on camera — three characters, but seeing a number entered by hand is
+  what makes the take read as live rather than staged.
 - **One full dry run without recording.** The wallet switch is the only fiddly part;
   get the Rabby account-switcher muscle memory down before the take that counts.
 
@@ -33,11 +45,10 @@ Values, chosen so they don't collide with the invoices seeded in step 6а:
 | Amount | `0.5` |
 | Reference | `INV-2026-005 · Q4 brand system, milestone 1` |
 
-1. Start on the app, Wallet A connected, ledger visible on the right.
-2. Click **Bill to**, paste Wallet B's address.
-3. Click **Amount**, **type** `0.5` — type it, don't paste; the keystrokes read as real.
-4. Click **Reference**, type the line above.
-5. Pause ~1s on the filled form, then click **Issue invoice**.
+1. Start on the app, Wallet A connected, invoice list visible on the right, **Bill to**
+   and **Reference** already filled in from the prep above.
+2. Click **Amount** and **type** `0.5` — type it, don't paste.
+3. Pause ~1s on the filled form, then click **Issue invoice**.
 6. Let the Rabby popup sit on screen ~1.5s before confirming — don't rush it, the
    viewer needs to register that this is a real wallet.
 7. Hold ~1s on the new **Pending** card.
@@ -47,7 +58,12 @@ Values, chosen so they don't collide with the invoices seeded in step 6а:
     signature, no `approve` before it. Confirm.
 11. **Hold for a full 2 seconds** after the badge flips Pending → Paid. Do not cut
     early; a caption lands right on this beat and needs room.
-12. Stop recording.
+12. *(Optional tail — keep rolling.)* Switch Rabby back to **Wallet A** and let the page
+    reload its view. This is not needed for the story: the status already flipped on
+    screen in step 11, and that is the beat the trailer captions. But it costs nothing
+    while the recorder is still running, and it gives the edit the option of ending on
+    the creditor's side. Record it, and it may or may not make the cut.
+13. Stop recording.
 
 ## After recording
 
