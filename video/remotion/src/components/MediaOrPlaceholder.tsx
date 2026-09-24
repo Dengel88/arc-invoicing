@@ -19,7 +19,7 @@ import {sansFont, monoFont} from '../fonts'
  */
 export const ASSETS = {
   'demo-take': {
-    ready: false,
+    ready: true,
     path: 'captures/demo-take.mp4',
     label: 'Screen recording: the demo take',
     howTo: 'See video/CAPTURE.md — one continuous take.',
@@ -46,7 +46,10 @@ export function MediaOrPlaceholder({
       <OffthreadVideo
         src={staticFile(asset.path)}
         trimBefore={Math.round(trimFrom * 30)}
-        style={{width: '100%', height: '100%', objectFit: 'cover'}}
+        // The file is stored without an audio track, but mute anyway: a raw screen
+        // recording can carry system sounds, and the trailer has its own soundtrack.
+        muted
+        style={{width: '100%', height: '100%', objectFit: 'contain'}}
       />
     )
   }

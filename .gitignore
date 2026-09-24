@@ -24,3 +24,11 @@ Thumbs.db
 # Tooling scratch
 .playwright-mcp/
 .vercel
+
+# Raw screen recordings. Never commit these: the unedited take shows the wallet
+# switcher, which lists other wallet addresses. Only the edited, privacy-checked
+# GIF under docs/ belongs in the repo.
+*.mp4
+*.mov
+*.mkv
+*.webm

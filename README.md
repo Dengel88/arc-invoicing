@@ -21,12 +21,12 @@ the money is in the creditor's wallet before the page finishes re-rendering.
 | **Live app** | [https://arc-invoicing-iota.vercel.app](https://arc-invoicing-iota.vercel.app) |
 | **Deployed at** | [`0x4AC461f079E9dd4f49f4d8254e4e0cA79b2102BA`](https://explorer.arc.io/address/0x4AC461f079E9dd4f49f4d8254e4e0cA79b2102BA) |
 
-<!--
-  DEMO GIF GOES HERE — see video/CAPTURE.md.
-  Replace this comment with:  ![Issuing and paying an invoice on Arc](docs/demo.gif)
-  Above the fold on purpose: a reviewer sees the thing working before deciding
-  whether to read further.
--->
+![Issuing an invoice from one wallet and paying it from another, on Arc mainnet](docs/demo.gif)
+
+*Recorded live on Arc mainnet: wallet A issues the invoice, wallet B pays it — one
+signature, no `approve` before it — and the badge flips to Paid. Invoice #6 on the
+[contract](https://explorer.arc.io/address/0x4AC461f079E9dd4f49f4d8254e4e0cA79b2102BA).
+The wallet switch is fast-forwarded and blurred.*
 
 ---
 
