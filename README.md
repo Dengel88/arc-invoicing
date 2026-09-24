@@ -233,6 +233,36 @@ code back afterwards, so a silent failure cannot be mistaken for success.
   is thorough and the contract is small and dependency-free, but that is not an audit,
   and [SECURITY.md](SECURITY.md) is a self-review, not a substitute for one.
 
+## What comes next
+
+The scope above is deliberate — a settled invoice on mainnet, proven, rather than four
+half-built features. These are the next three steps, in the order they would actually
+be taken:
+
+**1. Partial settlement.** Real invoices are rarely paid in one go: a deposit up front,
+the balance on delivery, sometimes a retainer drawn down over months. Today the contract
+enforces exact payment, which is the right call for a first version — an invoice is
+either settled or it is not, with no dust to reconcile — but it is also the single thing
+a working freelancer would hit first. It needs a running balance per invoice and a
+`Partially paid` status, not a redesign.
+
+**2. EURC and Arc's FX engine.** This is the step that only makes sense on Arc. A
+European contractor bills in EUR; a US client holds USDC. Everywhere else that means an
+off-chain FX step and a spread nobody can see. Arc ships an FX engine and EURC natively,
+so the invoice could be denominated in one currency and settled in another inside the
+same transaction, with the rate visible on-chain. That is cross-border invoicing
+actually finished, rather than cross-border invoicing with the hard part left out.
+
+**3. A shareable payment link.** The contract already supports open invoices — pass
+`address(0)` and anyone can settle it. What is missing is the last mile: a link a
+creditor can email, which opens straight to one invoice and one button. The goal is a
+client who pays without ever reading the word "blockchain", because the moment a payer
+has to understand the rails is the moment invoicing software loses to a bank transfer.
+
+None of these need the contract's core to change. `createInvoice` / `payInvoice` /
+`cancelInvoice` and the settlement model stay as they are; each step adds a layer on
+top. That is what the current scope was chosen to make possible.
+
 ## Licence
 
 MIT.
