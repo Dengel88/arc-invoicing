@@ -29,6 +29,8 @@ Thumbs.db
 # switcher, which lists other wallet addresses. Only the edited, privacy-checked
 # GIF under docs/ belongs in the repo.
 *.mp4
+*.mp3
+*.wav
 *.mov
 *.mkv
 *.webm

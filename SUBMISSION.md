@@ -31,6 +31,12 @@ https://arc-invoicing-iota.vercel.app
 https://github.com/Dengel88/arc-invoicing
 ```
 
+## Demo video
+
+```
+https://youtu.be/71x6kP8m4TE
+```
+
 ## Contract address (Arc mainnet, chain 5042)
 
 ```
